@@ -4,6 +4,8 @@ require("dotenv").config(); //
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
+// const encrypt = require("mongoose-encryption");
+const md5 = require("md5"); // ..1
 
 const app = express();
 
@@ -27,7 +29,6 @@ app.get("/register", function (req, res) {
 
 //...............................................................
 const mongoose = require("mongoose");
-const md5 = require("md5");
 
 mongoose.connect("mongodb://localhost:27017/userDB", {
    useNewUrlParser: true,
@@ -35,21 +36,41 @@ mongoose.connect("mongodb://localhost:27017/userDB", {
 });
 
 const userSchema = new mongoose.Schema({ email: String, password: String });
+//const secret1 = "Thxxxxxxxxxxxxxxret."; //Secret String Instead of 2 Keys
+// userSchema.plugin(encrypt, {
+//    secret: process.env.SECRET,
+//    encryptedFields: ["password"],
+// }); //
 
 const User = new mongoose.model("User", userSchema);
 
-app.post("/register", function (req, res) {});
+app.post("/register", function (req, res) {
+   const newUser = new User({
+      email: req.body.username,
+      password: md5(req.body.password), // ..2
+   }); // Create user
+
+   newUser.save((err) => {
+      err ? console.log(err) : res.render("secrets");
+   }); // Save user
+});
 
 //...............................................................
 app.post("/login", (req, res) => {
    const username = req.body.username;
-   const password = req.body.password;
+   const password = md5(req.body.password); // ..3
 
-   User.findOne({ email: username }, (err, foundUser) => {});
+   User.findOne({ email: username }, (err, foundUser) => {
+      if (err) {
+         console.log(err);
+      } else {
+         if (foundUser) {
+            if (foundUser.password === password) {
+               res.render("secrets");
+            }
+         }
+      }
+   });
 });
-
-//...............................................................
-
-//...............................................................
 
 //...............................................................
